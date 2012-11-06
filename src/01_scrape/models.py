@@ -7,7 +7,7 @@ class Post(Base):
     __tablename__ = "posts"
 
     id = Column(Integer, primary_key=True)
-    uri = Column(String)
+    uri = Column(String, index=True, unique=True)
     text = Column(String, nullable=True)
     favorites_text = Column(String, nullable=True)
 

@@ -6,7 +6,7 @@ def main():
     # -------------------------------------------------------------------------
     #   !!AI Make this configurable but drop the database.
     # -------------------------------------------------------------------------
-    tasks.drop_database.delay().get()
+    #tasks.drop_database.delay().get()
     # -------------------------------------------------------------------------
 
     tasks.initialize_database.delay().get()
