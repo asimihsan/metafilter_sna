@@ -26,3 +26,6 @@ pip-log.txt
 #Mr Developer
 .mr.developer.cfg
 database.sqlite3
+
+env/
+/data/favorites.gml

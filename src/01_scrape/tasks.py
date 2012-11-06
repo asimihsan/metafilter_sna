@@ -16,12 +16,16 @@ import models
 ROOT_URI = "http://www.metafilter.com"
 
 # How many pages of posts do you want.
-DEPTH_LIMIT = 100
+DEPTH_LIMIT = 1
 
 CURRENT_DIR = os.path.join(__file__, os.pardir)
 DATA_DIR = os.path.join(CURRENT_DIR, os.pardir, "data")
 DATABASE_PATH = os.path.abspath(os.path.join(DATA_DIR, "database.sqlite3"))
 DATABASE_URI = "sqlite:///%s" % DATABASE_PATH
+
+# If you need a proxy set it up here. Else set this variable to None.
+#PROXIES = None
+PROXIES = {"http": "127.0.0.1:8118"}
 # ----------------------------------------------------------------------------
 
 # ----------------------------------------------------------------------------
@@ -36,12 +40,12 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 @celery.task
-def initialize_database():
+def initialize_database(name="tasks.initialize_database"):
     engine = create_engine(DATABASE_URI)
     models.Base.metadata.create_all(engine)
 
 @celery.task
-def drop_database():
+def drop_database(name="tasks.drop_database"):
     engine = create_engine(DATABASE_URI)
     models.Base.metadata.drop_all(engine)
 
@@ -52,8 +56,15 @@ def get_uri(uri):
     This is wrapped in a task so that we can easily rate limit how often we
     hit the server."""
     logger.info("HTTP GET for URI: '%s'" % uri)
-    r = requests.get(uri)
-    r.raise_for_status()
+    try:
+        if proxies:
+            r = requests.get(uri, proxies=proxies)
+        else:
+            r = requests.get(uri)
+        r.raise_for_status()
+    except Exception, exc:
+        get_uri.retry(exc=exc)
+        
     return r.text
 
 @celery.task
