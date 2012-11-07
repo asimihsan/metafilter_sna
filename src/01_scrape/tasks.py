@@ -9,6 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.expression import select, exists
 import time
 import bz2
+import cPickle as pickle
 
 import models
 
@@ -20,7 +21,7 @@ import models
 ROOT_URI = "http://www.metafilter.com"
 
 # How many pages of posts do you want.
-DEPTH_LIMIT = 100
+DEPTH_LIMIT = 30
 
 CURRENT_DIR = os.path.join(__file__, os.pardir)
 DATA_DIR = os.path.join(CURRENT_DIR, os.pardir, os.pardir, "data")
@@ -74,6 +75,9 @@ def get_uri(uri, **kwargs):
     This is wrapped in a task so that we can easily rate limit how often we
     hit the server."""
     logger.info("HTTP GET for URI: '%s'" % uri)
+    if uri is None:
+        logger.warning("URI is None.")
+        return None
     try:
         if PROXY:
             conn = httplib2.Http(proxy_info = httplib2.ProxyInfo(PROXY[0],
@@ -94,7 +98,8 @@ def get_uri(uri, **kwargs):
 def get_post_uris(root_uri = ROOT_URI,
                   current_uri = ROOT_URI,
                   depth_limit = DEPTH_LIMIT,
-                  current_depth = 0):
+                  current_depth = 0,
+                  all_post_uris = None):
     """Go to the root of MetaFilter and get the URIs for the front pages,
     i.e. those that contain the post summaries.
 
@@ -103,8 +108,17 @@ def get_post_uris(root_uri = ROOT_URI,
     parse_post task for that Post."""
 
     logger.info("entry. current_uri: %s, current_depth: %s" % (current_uri, current_depth))
+
+    # -------------------------------------------------------------------------
+    #   Initialize local variables.
+    # -------------------------------------------------------------------------
+    if all_post_uris == None:
+        all_post_uris = []
+    else:
+        all_post_uris = pickle.loads(bz2.decompress(all_post_uris))
+    # -------------------------------------------------------------------------
+
     if current_depth >= depth_limit:
-        logger.info("current_depth at depth_limit, we're done.")
         return
 
     # -------------------------------------------------------------------------
@@ -119,8 +133,7 @@ def get_post_uris(root_uri = ROOT_URI,
     # -------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------
-    #   Spawn a process_post task per post URI if the post hasn't already
-    #   been processed.
+    #   Get a list of post URIs, add it to the list we have.
     # -------------------------------------------------------------------------
     post_uris = [link.attrib["href"] for link in doc.cssselect(".more")]
     engine = create_engine(DATABASE_URI)
@@ -134,7 +147,7 @@ def get_post_uris(root_uri = ROOT_URI,
             logger.info("post_uri '%s' already exists and is processed." % post_uri)
             continue
         process_post.delay(post_uri)
-        time.sleep(1)
+        all_post_uris.append(post_uri)
     # -------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------
@@ -149,10 +162,19 @@ def get_post_uris(root_uri = ROOT_URI,
         return
     next_link = next_link[0]
     logger.info("next_link points to: %s" % next_link.attrib["href"])
-    get_post_uris.delay(root_uri = ROOT_URI,
-                        current_uri = next_link.attrib["href"],
-                        depth_limit = DEPTH_LIMIT,
-                        current_depth = current_depth + 1)
+    if len(all_post_uris) > 0:
+        logger.info("encountered some new posts yet.")
+        current_depth += 1
+        countdown = 10
+    else:
+        logger.info("have not encountered any new posts.")
+        countdown = 0
+    kwargs = {"root_uri": ROOT_URI,
+              "current_uri": next_link.attrib["href"],
+              "depth_limit": DEPTH_LIMIT,
+              "current_depth": current_depth,
+              "all_post_uris": bz2.compress(pickle.dumps(all_post_uris))}
+    get_post_uris.apply_async(kwargs=kwargs, countdown=countdown)
     # -------------------------------------------------------------------------
 
 @celery.task
@@ -190,42 +212,22 @@ def process_post(post_uri):
     #
     #   See: http://docs.celeryproject.org/en/master/userguide/tasks.html#avoid-launching-synchronous-subtasks
     # -------------------------------------------------------------------------
-    chain = get_uri.s(post_uri) | parse_post.s(post.id, post_uri)
+    chain = get_uri.s(post_uri) | \
+            parse_post.s(post.id, post_uri) | \
+            get_uri.s() | \
+            store_post.s(post.id, post_uri)
     chain()
     # -------------------------------------------------------------------------
 
 @celery.task
 def parse_post(post_text, post_pk, post_uri):
     logger.info("entry. post_pk: %s, post_uri: %s" % (post_pk, post_uri))
+
+    # -------------------------------------------------------------------------
+    #   Initialize local variables.
+    # -------------------------------------------------------------------------
     post_text = bz2.decompress(post_text)
-    doc = lxml.html.document_fromstring(post_text)
-    doc.make_links_absolute(ROOT_URI)
-
     # -------------------------------------------------------------------------
-    #   Determine if there is a favourites link. If there is get the
-    #   contents of the favorites URI.
-    # -------------------------------------------------------------------------
-    logger.info("check for favorites link...")
-    all_links = [elem for elem in doc.cssselect("a")]
-    favorites_link = [elem for elem in all_links
-                      if hasattr(elem, "text") and
-                         elem.text is not None and
-                         "marked this as a favorite" in elem.text]
-    if len(favorites_link) == 0:
-        logger.info("there is no favorites link.")
-        return
-    favorites_link = favorites_link[0]
-
-    # See process_post()'s comment about a similar looking chain() call.
-    chain = get_uri.s(favorites_link.attrib["href"]) | store_post.s(post_pk, post_uri, post_text)
-    chain()
-    # -------------------------------------------------------------------------
-
-@celery.task
-def store_post(favorites_text, post_pk, post_uri, post_text):
-    logger.info("entry. post_pk: %s, post_uri: %s" % (post_pk, post_uri))
-
-    favorites_text = bz2.decompress(favorites_text)
 
     # -------------------------------------------------------------------------
     #   Update the existing Post object.
@@ -237,8 +239,45 @@ def store_post(favorites_text, post_pk, post_uri, post_text):
     post = session.query(models.Post).filter_by(id = post_pk).first()
     post.uri = post_uri.decode("utf-8")
     post.text = post_text.decode("utf-8")
-    post.favorites_text = favorites_text.decode("utf-8")
     session.add(post)
     session.commit()
     # -------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
+    #   Determine if there is a favourites link. If there is get the
+    #   contents of the favorites URI.
+    # -------------------------------------------------------------------------
+    logger.info("check for favorites link...")
+    doc = lxml.html.document_fromstring(post_text)
+    doc.make_links_absolute(ROOT_URI)
+    all_links = [elem for elem in doc.cssselect("a")]
+    favorites_link = [elem for elem in all_links
+                      if hasattr(elem, "text") and
+                         elem.text is not None and
+                         "marked this as a favorite" in elem.text]
+    if len(favorites_link) == 0:
+        logger.info("there is no favorites link.")
+        return None
+    favorites_link = favorites_link[0]
+    return favorites_link.attrib["href"]
+    # -------------------------------------------------------------------------
+
+@celery.task
+def store_post(favorites_text, post_pk, post_uri):
+    logger.info("entry. post_pk: %s, post_uri: %s" % (post_pk, post_uri))
+
+    engine = create_engine(DATABASE_URI)
+    Session = sessionmaker(bind = engine)
+    session = Session()
+    post = session.query(models.Post).filter_by(id = post_pk).first()
+
+    if favorites_text is None:
+        logger.info("post favorites is empty.")
+        session.delete(post)
+    else:
+        logger.info("post favorites is not empty.")
+        favorites_text = bz2.decompress(favorites_text)
+        post.favorites_text = favorites_text.decode("utf-8")
+        session.add(post)
+    session.commit()
 
