@@ -2,6 +2,7 @@
 
 import os
 import sys
+import math
 
 import lxml.html
 import pprint
@@ -70,7 +71,13 @@ def generate_favorites():
             user_ids.append(user_id)
         user_id_combinations = itertools.combinations(user_ids, r=2)
         for (first_node, second_node) in user_id_combinations:
-            G.add_edge(first_node, second_node)
+            if G.has_edge(first_node, second_node):
+                edge = G.get_edge_data(first_node, second_node)
+                current_weight = edge["value"]
+                new_weight = math.log1p(math.expm1(current_weight) + 1)
+            else:
+                new_weight = math.log1p(1)
+            G.add_edge(first_node, second_node, value=new_weight)
     # -------------------------------------------------------------------------
 
     nx.write_gml(G, FAVORITES_GML_OUTPUT_PATH)
@@ -109,7 +116,13 @@ def generate_comments():
             user_ids.append(user_id)
         user_id_combinations = itertools.combinations(user_ids, r=2)
         for (first_node, second_node) in user_id_combinations:
-            G.add_edge(first_node, second_node)
+            if G.has_edge(first_node, second_node):
+                edge = G.get_edge_data(first_node, second_node)
+                current_weight = edge["value"]
+                new_weight = math.log1p(math.expm1(current_weight) + 1)
+            else:
+                new_weight = math.log1p(1)
+            G.add_edge(first_node, second_node, value=new_weight)
     # -------------------------------------------------------------------------
 
     nx.write_gml(G, COMMENTS_GML_OUTPUT_PATH)
