@@ -7,7 +7,7 @@ Asim Ihsan *<<asim.ihsan@gmail.com>>*
 
 ## 1. Abstract
 
-MetaFilter is an active and exciting online forum that discusses topics from politics to poetry, culture to computing. Running since 1994, it allows members to post topics onto a front page, comment on the topics, and mark both posts and comments as "favorites". In this paper I discuss several hypotheses surrounding these participation mechanisms, how I collected data to investigate these hypotheses, and what methods I used to test my hypotheses. My conclusion is that there is clear evidence that several small-world communities are present on MetaFilter.
+MetaFilter is an active and exciting online forum that discusses a wide variety of topics. Running since 1994, it allows members to post topics onto a front page, comment on the topics, and mark both posts and comments as "favorites". In this paper I discuss several hypotheses surrounding these participation mechanisms, how I collected data to investigate these hypotheses, and what methods I used to test my hypotheses. My conclusion is that there is clear evidence that several small-world communities are present on MetaFilter, and that the strength of such communities is correlated to the amount of effort required when participating.
 
 Section 2 clarifies what parts of MetaFilter I am seeking to analyse, what hypotheses I wish to test, and why I think these hypotheses are interesting.  Section 3 explores the gathered data with several metrics, compares them to Erdős–Rényi graphs of the same size, and draws conclusions. Section 4 addresses limitations of my approach and suggested areas for future work.
 
@@ -111,6 +111,7 @@ Number of communities via greedy optimization of modularity & 13 & 5 \\
 Largest community via greedy optimization of modularity & 1831 & 1429 \\
 Number of communities via walktrap & 43 & 9 \\
 Largest community via walktrap & 2304 & 723 \\
+Assortativity based on degree & -0.158 & -0.00213 \\
 \end{tabular}
 
 The following is interesting about the above:
@@ -118,6 +119,8 @@ The following is interesting about the above:
 -    Compared to a similar ER graph, i.e. a graph with a similar number of edges and nodes where edges connect at random, the favorites graph has a higher average clustering coefficient. This means that, on average, each node in the favorites graph is closer to becoming a *clique*, i.e. a complete subgraph, than a random graph. This suggests that clustering is more common than random in the favorites graph.
 -    Compared to a similar ER graph the favorites graph has a similar average shortest path length. The combination of a relatively high average clustering coefficient and similar average shortest path length suggests the favorites graph is exhibiting *small-world* behavior, i.e. that there are tightly-bound and very connected subgraphs, and the subgraphs are sparsely connected to other subgraphs.
 -    Using two methods for approximating the number of communities in the graph, either by maximizing modularity or using random walks (i.e. walktrap), we see that there are more communities present than random and that the largest community is larger than random.
+-    The diameter, i.e. the length of the longest path, is remarkably similar between the favorites graph and the ER graph. This confirms the conclusion with respect to the similar average shortest path length discussed above, i.e. there are small-world networks in effect.
+-    Assortativity based on degree is positive if vertices with similar degrees tend to connect with one another, and negative if vertices with dissimilar degrees connect with one another. In the ER graph it is almost 0, indicating no bias, whereas for the comments graph it is more strongly negative, suggesting that nodes preferentially attach to high-degree nodes, i.e. hubs.
 
 Table 2 summarises metrics for the comments graph, described in section 2, in comparison to an Erdős–Rényi graph with he same number of nodes and edges:
 
@@ -132,6 +135,7 @@ Number of communities via greedy optimization of modularity & 11 & 3 \\
 Largest community via greedy optimization of modularity & 3460 & 1926 \\
 Number of communities via walktrap & 16 & 10 \\
 Largest community via walktrap & 3405 & 758 \\
+Assortativity based on degree & -0.143 & -0.00243 \\
 \end{tabular}
 
 As the metrics for the comments graph relative to an equivalent random graph are remarkably similar I will not regurgitate the same conclusions that have already been discussed.
@@ -149,6 +153,7 @@ Number of communities via greedy optimization of modularity & 11 & 13 \\
 Largest community via greedy optimization of modularity & 3460 & 1831 \\
 Number of communities via walktrap & 16 & 43 \\
 Largest community via walktrap & 3405 & 2304 \\
+Assortativity based on degree & -0.158 & -0.143 \\
 \end{tabular}
 
 In comparing the comments and favorites graphs note that the comments graph is not only more clustered but also has less communities, with the largest community is greater than that of the favorites graph.
@@ -186,6 +191,9 @@ I used R and the igraph package to calculate all of the above metrics. Here is a
     wt_sizes = sizes(wt)
     max(wt_sizes)
 
+    # Assortativity based on degree
+    assortativity.degree(g)
+
 In order to derive the equivalent random graph metrics you can generate an Erdős–Rényi graph with the same number of nodes and then calculate an appropriate edge probability $p$ such that:
 
 $\frac{N(N-1)}{2} \times p = E$
@@ -202,10 +210,13 @@ I believe that the above results confirm hypothesis H1, i.e. that users tend to 
 
 I also belive that the results confirm hypothesis H2, i.e. that users are more discriminative and clustered on high-effort participation methods. However, to what degree is difficult to say. Is an average clustering coefficient $0.468 > 0.315$ sufficient to say that comments graphs are "more clustered" than favorites graphs? If so then to what extent? This is very difficult to say. However I think that, in combination with the larger community sizes, the comments graph seems to be "more community like" than the favorites graph.
 
+The assortativity coefficient metrics also suggest that there may be hubs in both graphs, but without a usable visualization it's difficult to explore this conclusion.
+
 ## 4. Limitations and suggestions for future work
 
 There are a wide variety of limitations to the above that should be mentioned:
 
--    The weighting of the edges is rather arbitrary. Why $ln(x+1)$? Simply because I did not want users who have co-favorited 2 posts to be twice as important as those who have co-favorited 1. I think a logarithmic weighting is appropriate and that the constant factor is negligible, but this is an assumption.
+-    The weighting of the edges is rather arbitrary. Why $ln(x+1)$? Simply because I did not want users who have co-favorited 2 posts to be twice as important as those who have co-favorited 1 post. I think a logarithmic weighting is appropriate and that the constant factor is negligible, but this is an assumption.
 -    I did not collect that much data. ~1,300 posts is not enough. However, I've set up my scraping scripts to be very slow in order to be polite to the MetaFilter system administrators; more data could yield a more clear confirmation of e.g. hypothesis H2.
 -    An overlapping community detection algorithm seems quite ideal here, and should be applied in future studies.
+-    Given that community-finding algorithms suggest there are communities present it'd be worthwhile developing a simple recommendation service that would suggest posts for users to read based on which communities they're in, and whether other community members have commented or favorited posts. This would give some useful subjective feedback on the community structure.

@@ -8,14 +8,16 @@ November 2012
 
 \subsection{1. Abstract}
 
-MetaFilter is an active and exciting online forum that discusses topics
-from politics to poetry, culture to computing. Running since 1994, it
-allows members to post topics onto a front page, comment on the topics,
-and mark both posts and comments as ``favorites''. In this paper I
-discuss several hypotheses surrounding these participation mechanisms,
-how I collected data to investigate these hypotheses, and what methods I
-used to test my hypotheses. My conclusion is that there is clear
-evidence that several small-world communities are present on MetaFilter.
+MetaFilter is an active and exciting online forum that discusses a wide
+variety of topics. Running since 1994, it allows members to post topics
+onto a front page, comment on the topics, and mark both posts and
+comments as ``favorites''. In this paper I discuss several hypotheses
+surrounding these participation mechanisms, how I collected data to
+investigate these hypotheses, and what methods I used to test my
+hypotheses. My conclusion is that there is clear evidence that several
+small-world communities are present on MetaFilter, and that the strength
+of such communities is correlated to the amount of effort required when
+participating.
 
 Section 2 clarifies what parts of MetaFilter I am seeking to analyse,
 what hypotheses I wish to test, and why I think these hypotheses are
@@ -208,6 +210,7 @@ Number of communities via greedy optimization of modularity & 13 & 5 \\
 Largest community via greedy optimization of modularity & 1831 & 1429 \\
 Number of communities via walktrap & 43 & 9 \\
 Largest community via walktrap & 2304 & 723 \\
+Assortativity based on degree & -0.158 & -0.00213 \\
 \end{tabular}
 
 The following is interesting about the above:
@@ -234,6 +237,18 @@ The following is interesting about the above:
   graph, either by maximizing modularity or using random walks
   (i.e.~walktrap), we see that there are more communities present than
   random and that the largest community is larger than random.
+\item
+  The diameter, i.e.~the length of the longest path, is remarkably
+  similar between the favorites graph and the ER graph. This confirms
+  the conclusion with respect to the similar average shortest path
+  length discussed above, i.e.~there are small-world networks in effect.
+\item
+  Assortativity based on degree is positive if vertices with similar
+  degrees tend to connect with one another, and negative if vertices
+  with dissimilar degrees connect with one another. In the ER graph it
+  is almost 0, indicating no bias, whereas for the comments graph it is
+  more strongly negative, suggesting that nodes preferentially attach to
+  high-degree nodes, i.e.~hubs.
 \end{itemize}
 
 Table 2 summarises metrics for the comments graph, described in section
@@ -251,6 +266,7 @@ Number of communities via greedy optimization of modularity & 11 & 3 \\
 Largest community via greedy optimization of modularity & 3460 & 1926 \\
 Number of communities via walktrap & 16 & 10 \\
 Largest community via walktrap & 3405 & 758 \\
+Assortativity based on degree & -0.143 & -0.00243 \\
 \end{tabular}
 
 As the metrics for the comments graph relative to an equivalent random
@@ -270,6 +286,7 @@ Number of communities via greedy optimization of modularity & 11 & 13 \\
 Largest community via greedy optimization of modularity & 3460 & 1831 \\
 Number of communities via walktrap & 16 & 43 \\
 Largest community via walktrap & 3405 & 2304 \\
+Assortativity based on degree & -0.158 & -0.143 \\
 \end{tabular}
 
 In comparing the comments and favorites graphs note that the comments
@@ -311,6 +328,9 @@ max(fc_sizes)
 wt = walktrap.community(as.undirected(g))
 wt_sizes = sizes(wt)
 max(wt_sizes)
+
+# Assortativity based on degree
+assortativity.degree(g)
 \end{verbatim}
 
 In order to derive the equivalent random graph metrics you can generate
@@ -349,6 +369,10 @@ extent? This is very difficult to say. However I think that, in
 combination with the larger community sizes, the comments graph seems to
 be ``more community like'' than the favorites graph.
 
+The assortativity coefficient metrics also suggest that there may be
+hubs in both graphs, but without a usable visualization it's difficult
+to explore this conclusion.
+
 \subsection{4. Limitations and suggestions for future work}
 
 There are a wide variety of limitations to the above that should be
@@ -358,9 +382,9 @@ mentioned:
 \item
   The weighting of the edges is rather arbitrary. Why $ln(x+1)$? Simply
   because I did not want users who have co-favorited 2 posts to be twice
-  as important as those who have co-favorited 1. I think a logarithmic
-  weighting is appropriate and that the constant factor is negligible,
-  but this is an assumption.
+  as important as those who have co-favorited 1 post. I think a
+  logarithmic weighting is appropriate and that the constant factor is
+  negligible, but this is an assumption.
 \item
   I did not collect that much data. \textasciitilde{}1,300 posts is not
   enough. However, I've set up my scraping scripts to be very slow in
@@ -369,4 +393,11 @@ mentioned:
 \item
   An overlapping community detection algorithm seems quite ideal here,
   and should be applied in future studies.
+\item
+  Given that community-finding algorithms suggest there are communities
+  present it'd be worthwhile developing a simple recommendation service
+  that would suggest posts for users to read based on which communities
+  they're in, and whether other community members have commented or
+  favorited posts. This would give some useful subjective feedback on
+  the community structure.
 \end{itemize}
