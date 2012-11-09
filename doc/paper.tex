@@ -22,7 +22,7 @@ participating.
 Section 2 clarifies what parts of MetaFilter I am seeking to analyse,
 what hypotheses I wish to test, and why I think these hypotheses are
 interesting. Section 3 explores the gathered data with several metrics,
-compares them to Erdős--Rényi graphs of the same size, and draws
+compares them to Erdős--Rényi graphs of a similar size, and draws
 conclusions. Section 4 addresses limitations of my approach and
 suggested areas for future work.
 
@@ -58,8 +58,8 @@ Hence, the hypotheses I wish to test are:
 
 \begin{itemize}
 \item
-  \textbf{H1}: Users will tend to both favorites posts and comment on
-  posts with particular subsets of the total set of users.
+  \textbf{H1}: Users will tend to both favorite and comment on posts
+  with particular subsets of the total set of users.
 \item
   \textbf{H2}: Users are less likely to focus their favorites as they
   are their comments.
@@ -80,9 +80,9 @@ an action to those topics which they are particularly interested in.
 
 \subsubsection{Data collection}
 
-In short the code I've written uses Python to launch a small number of
-workers to scrape posts off of MetaFilter. They output an SQLite
-database with a single table, ``posts'', with the raw HTML required for
+In short, the code I've written uses Python to launch a small number of
+workers to scrape posts off of MetaFilter. They output a SQLite database
+with a single table, ``posts'', with the raw HTML required for
 subsequent analysis.
 
 You may find the code that I've used to collect and parse the data in
@@ -91,9 +91,9 @@ the following GitHub repository:
 \url{https://github.com/asimihsan/metafilter_sna}
 
 Here are some basic instructions on setting up your computer to execute
-this code. These instructions have only been testing on Mac OS X but the
-equivalent Linux instructions (i.e.~using \texttt{yum} or \texttt{apt})
-should work.
+this code. These instructions are intended for Mac OS X but equivalent
+Linux instructions (i.e.~using \texttt{yum} or \texttt{apt}) should
+work.
 
 Please note that these instructions are very rough and are untested. If
 you encounter any difficulties please feel free to contact me via GitHub
@@ -112,6 +112,8 @@ for help, I'm happy to assist.
   \item
     Install Python 2.7 and virtualenv using Homebrew
     (\url{https://gist.github.com/1208841})
+  \item
+    Install lxml dependencies: \texttt{brew install libxslt libxml2}
   \item
     Checkout the code from the git repository above.
   \item
@@ -193,15 +195,15 @@ SQLite database of raw HTML, discussed in section 2, and the Graph
 Markup Language (GML) files of the corresponding weighted undirected
 graphs are available in the following compressed 7-Zip file here:
 
-\url{http://aifiles.s3.amazonaws.com/metafilter_sna_data.7z}
+\url{http://files.asimihsan.com/metafilter_sna_data.7z}
 
 Table 1 summarises metrics for the favorites graph, described in section
-2, in comparison to an Erdős--Rényi graph with he same number of nodes
-and edges:
+2, in comparison to an Erdős--Rényi graph with the same number of nodes
+and a similar number of edges:
 
 \begin{tabular}{|l|l|l|}\hline
 Metric & Favorites graph & Erdős–Rényi graph \\ \hline
-Nodes  & 3,693 & 3,963 \\
+Nodes  & 3,693 & 3,693 \\
 Edges  & 329,288 & 329,576 \\
 Average clustering coefficient & 0.315 & 0.0482 \\
 Diameter & 4 & 3 \\
@@ -246,14 +248,14 @@ The following is interesting about the above:
   Assortativity based on degree is positive if vertices with similar
   degrees tend to connect with one another, and negative if vertices
   with dissimilar degrees connect with one another. In the ER graph it
-  is almost 0, indicating no bias, whereas for the comments graph it is
+  is almost 0, indicating no bias, whereas for the favorites graph it is
   more strongly negative, suggesting that nodes preferentially attach to
   high-degree nodes, i.e.~hubs.
 \end{itemize}
 
 Table 2 summarises metrics for the comments graph, described in section
-2, in comparison to an Erdős--Rényi graph with he same number of nodes
-and edges:
+2, in comparison to an Erdős--Rényi graph with the same number of nodes
+and a similar number of edges:
 
 \begin{tabular}{|l|l|l|}\hline
 Metric & Comments graph & Erdős–Rényi graph \\ \hline
@@ -269,9 +271,10 @@ Largest community via walktrap & 3405 & 758 \\
 Assortativity based on degree & -0.143 & -0.00243 \\
 \end{tabular}
 
-As the metrics for the comments graph relative to an equivalent random
-graph are remarkably similar I will not regurgitate the same conclusions
-that have already been discussed.
+The differences in the metrics between the comments graph and an
+equivalent ER graph are similar to the difference in the metrics between
+the favorites graph and its equivalent ER graph. Hence please refer to
+the analysis above as it also applies here.
 
 Table 3 compares metrics between the comments and favorites graphs:
 
@@ -286,12 +289,12 @@ Number of communities via greedy optimization of modularity & 11 & 13 \\
 Largest community via greedy optimization of modularity & 3460 & 1831 \\
 Number of communities via walktrap & 16 & 43 \\
 Largest community via walktrap & 3405 & 2304 \\
-Assortativity based on degree & -0.158 & -0.143 \\
+Assortativity based on degree & -0.143 & -0.158 \\
 \end{tabular}
 
 In comparing the comments and favorites graphs note that the comments
-graph is not only more clustered but also has less communities, with the
-largest community is greater than that of the favorites graph.
+graph is not only more clustered but also has fewer communities, and
+that the largest community is greater than that of the favorites graph.
 
 \subsubsection{Calculation}
 
@@ -367,7 +370,7 @@ clustering coefficient $0.468 > 0.315$ sufficient to say that comments
 graphs are ``more clustered'' than favorites graphs? If so then to what
 extent? This is very difficult to say. However I think that, in
 combination with the larger community sizes, the comments graph seems to
-be ``more community like'' than the favorites graph.
+be ``more community-like'' than the favorites graph.
 
 The assortativity coefficient metrics also suggest that there may be
 hubs in both graphs, but without a usable visualization it's difficult
@@ -386,7 +389,7 @@ mentioned:
   logarithmic weighting is appropriate and that the constant factor is
   negligible, but this is an assumption.
 \item
-  I did not collect that much data. \textasciitilde{}1,300 posts is not
+  I did not collect that much data. \textasciitilde{}1,300 posts are not
   enough. However, I've set up my scraping scripts to be very slow in
   order to be polite to the MetaFilter system administrators; more data
   could yield a more clear confirmation of e.g.~hypothesis H2.

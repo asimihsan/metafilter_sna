@@ -9,7 +9,7 @@ Asim Ihsan *<<asim.ihsan@gmail.com>>*
 
 MetaFilter is an active and exciting online forum that discusses a wide variety of topics. Running since 1994, it allows members to post topics onto a front page, comment on the topics, and mark both posts and comments as "favorites". In this paper I discuss several hypotheses surrounding these participation mechanisms, how I collected data to investigate these hypotheses, and what methods I used to test my hypotheses. My conclusion is that there is clear evidence that several small-world communities are present on MetaFilter, and that the strength of such communities is correlated to the amount of effort required when participating.
 
-Section 2 clarifies what parts of MetaFilter I am seeking to analyse, what hypotheses I wish to test, and why I think these hypotheses are interesting.  Section 3 explores the gathered data with several metrics, compares them to Erdős–Rényi graphs of the same size, and draws conclusions. Section 4 addresses limitations of my approach and suggested areas for future work.
+Section 2 clarifies what parts of MetaFilter I am seeking to analyse, what hypotheses I wish to test, and why I think these hypotheses are interesting.  Section 3 explores the gathered data with several metrics, compares them to Erdős–Rényi graphs of a similar size, and draws conclusions. Section 4 addresses limitations of my approach and suggested areas for future work.
 
 ## 2. MetaFilter, hypotheses, and data collection
 
@@ -28,7 +28,7 @@ Although users have their own particular motivations for participating in online
 
 Hence, the hypotheses I wish to test are:
 
--    **H1**: Users will tend to both favorites posts and comment on posts with particular subsets of the total set of users.
+-    **H1**: Users will tend to both favorite and comment on posts with particular subsets of the total set of users.
 -    **H2**: Users are less likely to focus their favorites as they are their comments.
 
 Intuitively, H1 is likely to be true because users each have their own interests and these are likely to intersect with strict subsets of other users. Attention and time are so finite that we're likely to behave like this. Given how broad the topic variation is on MetaFilter it'd be interesting to see what these topic clusters are.
@@ -37,13 +37,13 @@ H2 is a bit more obscure but perhaps more interesting. I believe there is a sign
 
 ### Data collection
 
-In short the code I've written uses Python to launch a small number of workers to scrape posts off of MetaFilter. They output an SQLite database with a single table, "posts", with the raw HTML required for subsequent analysis.
+In short, the code I've written uses Python to launch a small number of workers to scrape posts off of MetaFilter. They output a SQLite database with a single table, "posts", with the raw HTML required for subsequent analysis.
 
 You may find the code that I've used to collect and parse the data in the following GitHub repository:
 
 <https://github.com/asimihsan/metafilter_sna>
 
-Here are some basic instructions on setting up your computer to execute this code. These instructions have only been testing on Mac OS X but the equivalent Linux instructions (i.e. using `yum` or `apt`) should work.
+Here are some basic instructions on setting up your computer to execute this code. These instructions are intended for Mac OS X but equivalent Linux instructions (i.e. using `yum` or `apt`) should work.
 
 Please note that these instructions are very rough and are untested. If you encounter any difficulties please feel free to contact me via GitHub for help, I'm happy to assist.
 
@@ -51,6 +51,7 @@ Please note that these instructions are very rough and are untested. If you enco
     -    Install Homebrew (<http://mxcl.github.com/homebrew/>)
     -    Install RabbitMQ using Homebrew (<http://www.rabbitmq.com/install-homebrew.html>)
     -    Install Python 2.7 and virtualenv using Homebrew (<https://gist.github.com/1208841>)
+	-	 Install lxml dependencies: `brew install libxslt libxml2`
     -    Checkout the code from the git repository above.
     -    Create a new virtulenv for this code:
 
@@ -96,13 +97,13 @@ In this paper we will create **weighted, undirected** graphs where nodes are **u
 
 For this paper I will consider the last 1,386 posts on MetaFilter, covering a time period of approximately one and a half months. Both the SQLite database of raw HTML, discussed in section 2, and the Graph Markup Language (GML) files of the corresponding weighted undirected graphs are available in the following compressed 7-Zip file here:
 
-<http://aifiles.s3.amazonaws.com/metafilter_sna_data.7z>
+<http://files.asimihsan.com/metafilter_sna_data.7z>
 
-Table 1 summarises metrics for the favorites graph, described in section 2, in comparison to an Erdős–Rényi graph with he same number of nodes and edges:
+Table 1 summarises metrics for the favorites graph, described in section 2, in comparison to an Erdős–Rényi graph with the same number of nodes and a similar number of edges:
 
 \begin{tabular}{|l|l|l|}\hline
 Metric & Favorites graph & Erdős–Rényi graph \\ \hline
-Nodes  & 3,693 & 3,963 \\
+Nodes  & 3,693 & 3,693 \\
 Edges  & 329,288 & 329,576 \\
 Average clustering coefficient & 0.315 & 0.0482 \\
 Diameter & 4 & 3 \\
@@ -120,9 +121,9 @@ The following is interesting about the above:
 -    Compared to a similar ER graph the favorites graph has a similar average shortest path length. The combination of a relatively high average clustering coefficient and similar average shortest path length suggests the favorites graph is exhibiting *small-world* behavior, i.e. that there are tightly-bound and very connected subgraphs, and the subgraphs are sparsely connected to other subgraphs.
 -    Using two methods for approximating the number of communities in the graph, either by maximizing modularity or using random walks (i.e. walktrap), we see that there are more communities present than random and that the largest community is larger than random.
 -    The diameter, i.e. the length of the longest path, is remarkably similar between the favorites graph and the ER graph. This confirms the conclusion with respect to the similar average shortest path length discussed above, i.e. there are small-world networks in effect.
--    Assortativity based on degree is positive if vertices with similar degrees tend to connect with one another, and negative if vertices with dissimilar degrees connect with one another. In the ER graph it is almost 0, indicating no bias, whereas for the comments graph it is more strongly negative, suggesting that nodes preferentially attach to high-degree nodes, i.e. hubs.
+-    Assortativity based on degree is positive if vertices with similar degrees tend to connect with one another, and negative if vertices with dissimilar degrees connect with one another. In the ER graph it is almost 0, indicating no bias, whereas for the favorites graph it is more strongly negative, suggesting that nodes preferentially attach to high-degree nodes, i.e. hubs.
 
-Table 2 summarises metrics for the comments graph, described in section 2, in comparison to an Erdős–Rényi graph with he same number of nodes and edges:
+Table 2 summarises metrics for the comments graph, described in section 2, in comparison to an Erdős–Rényi graph with the same number of nodes and a similar number of edges:
 
 \begin{tabular}{|l|l|l|}\hline
 Metric & Comments graph & Erdős–Rényi graph \\ \hline
@@ -138,7 +139,7 @@ Largest community via walktrap & 3405 & 758 \\
 Assortativity based on degree & -0.143 & -0.00243 \\
 \end{tabular}
 
-As the metrics for the comments graph relative to an equivalent random graph are remarkably similar I will not regurgitate the same conclusions that have already been discussed.
+The differences in the metrics between the comments graph and an equivalent ER graph are similar to the difference in the metrics between the favorites graph and its equivalent ER graph. Hence please refer to the analysis above as it also applies here.
 
 Table 3 compares metrics between the comments and favorites graphs:
 
@@ -153,10 +154,10 @@ Number of communities via greedy optimization of modularity & 11 & 13 \\
 Largest community via greedy optimization of modularity & 3460 & 1831 \\
 Number of communities via walktrap & 16 & 43 \\
 Largest community via walktrap & 3405 & 2304 \\
-Assortativity based on degree & -0.158 & -0.143 \\
+Assortativity based on degree & -0.143 & -0.158 \\
 \end{tabular}
 
-In comparing the comments and favorites graphs note that the comments graph is not only more clustered but also has less communities, with the largest community is greater than that of the favorites graph.
+In comparing the comments and favorites graphs note that the comments graph is not only more clustered but also has fewer communities, and that the largest community is greater than that of the favorites graph.
 
 ### Calculation
 
@@ -208,7 +209,7 @@ Where N is the number of nodes, E is the number of edges. Generating the graph i
 
 I believe that the above results confirm hypothesis H1, i.e. that users tend to both favorite posts and comment on posts wuth particular subsets of other users, i.e. in clusters. Both the average clustering coefficients and the community finding algorithms confirm this. Moreover, and even more interesting, with the average shortest paths the same between both the favorites and comments graphs and their equivalent ER graphs, it's clear that there is small-world structure in effect.
 
-I also belive that the results confirm hypothesis H2, i.e. that users are more discriminative and clustered on high-effort participation methods. However, to what degree is difficult to say. Is an average clustering coefficient $0.468 > 0.315$ sufficient to say that comments graphs are "more clustered" than favorites graphs? If so then to what extent? This is very difficult to say. However I think that, in combination with the larger community sizes, the comments graph seems to be "more community like" than the favorites graph.
+I also belive that the results confirm hypothesis H2, i.e. that users are more discriminative and clustered on high-effort participation methods. However, to what degree is difficult to say. Is an average clustering coefficient $0.468 > 0.315$ sufficient to say that comments graphs are "more clustered" than favorites graphs? If so then to what extent? This is very difficult to say. However I think that, in combination with the larger community sizes, the comments graph seems to be "more community-like" than the favorites graph.
 
 The assortativity coefficient metrics also suggest that there may be hubs in both graphs, but without a usable visualization it's difficult to explore this conclusion.
 
@@ -217,6 +218,6 @@ The assortativity coefficient metrics also suggest that there may be hubs in bot
 There are a wide variety of limitations to the above that should be mentioned:
 
 -    The weighting of the edges is rather arbitrary. Why $ln(x+1)$? Simply because I did not want users who have co-favorited 2 posts to be twice as important as those who have co-favorited 1 post. I think a logarithmic weighting is appropriate and that the constant factor is negligible, but this is an assumption.
--    I did not collect that much data. ~1,300 posts is not enough. However, I've set up my scraping scripts to be very slow in order to be polite to the MetaFilter system administrators; more data could yield a more clear confirmation of e.g. hypothesis H2.
+-    I did not collect that much data. ~1,300 posts are not enough. However, I've set up my scraping scripts to be very slow in order to be polite to the MetaFilter system administrators; more data could yield a more clear confirmation of e.g. hypothesis H2.
 -    An overlapping community detection algorithm seems quite ideal here, and should be applied in future studies.
 -    Given that community-finding algorithms suggest there are communities present it'd be worthwhile developing a simple recommendation service that would suggest posts for users to read based on which communities they're in, and whether other community members have commented or favorited posts. This would give some useful subjective feedback on the community structure.
